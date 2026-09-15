@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Simple AI Chatbot</title>
+  <style>
+    body { font-family: sans-serif; background: #f4f4f9; display: flex; justify-content: center; padding: 20px; }
+    .chat-container { width: 100%; max-width: 500px; background: #fff; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); display: flex; flex-direction: column; height: 85vh; }
+    .header { padding: 12px; border-bottom: 1px solid #eee; display: flex; gap: 8px; flex-direction: column; font-size: 13px; }
+    .header input { padding: 6px; border: 1px solid #ccc; border-radius: 4px; }
+    .chat-box { flex: 1; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+    .msg { max-width: 80%; padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.4; word-break: break-word; }
+    .user { align-self: flex-end; background: #007bff; color: #fff; }
+    .ai { align-self: flex-start; background: #e9ecef; color: #333; }
+    .input-row { display: flex; border-top: 1px solid #eee; padding: 10px; gap: 8px; }
+    .input-row input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 6px; outline: none; }
+    .input-row button { padding: 10px 18px; border: none; background: #007bff; color: #fff; border-radius: 6px; cursor: pointer; }
+    .input-row button:disabled { background: #aaa; }
+  </style>
+</head>
+<body>
+
+<div class="chat-container">
+  <div class="header">
+    <input type="text" id="apiUrl" value="https://api.openai.com/v1/chat/completions" placeholder="API Endpoint URL" />
+    <input type="password" id="apiKey" placeholder="API Key (e.g. sk-...)" />
+    <input type="text" id="model" value="gpt-4o-mini" placeholder="Model Name (e.g. gpt-4o-mini, flash)" />
+  </div>
+
+  <div class="chat-box" id="chatBox"></div>
+
+  <form class="input-row" id="chatForm">
+    <input type="text" id="userInput" placeholder="Type your message..." required autocomplete="off" />
+    <button type="submit" id="sendBtn">Send</button>
+  </form>
+</div>
+
+<script>
+  const chatBox = document.getElementById("chatBox");
+  const chatForm = document.getElementById("chatForm");
+  const userInput = document.getElementById("userInput");
+  const sendBtn = document.getElementById("sendBtn");
+
+  // Maintain conversation history
+  const messages = [
+    { role: "system", content: "You are a helpful assistant." }
+  ];
+
+  function appendMessage(role, text) {
+    const div = document.createElement("div");
+    div.className = `msg ${role}`;
+    div.textContent = text;
+    chatBox.appendChild(div);
+    chatBox.scrollTop = chatBox.scrollHeight;
+    return div;
+  }
+
+  chatForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const text = userInput.value.trim();
+    if (!text) return;
+
+    const endpoint = document.getElementById("apiUrl").value.trim();
+    const key = document.getElementById("apiKey").value.trim();
+    const model = document.getElementById("model").value.trim();
+
+    appendMessage("user", text);
+    messages.push({ role: "user", content: text });
+    userInput.value = "";
+    sendBtn.disabled = true;
+
+    const loadingDiv = appendMessage("ai", "Thinking...");
+
+    try {
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${key}`
+        },
+        body: JSON.stringify({
+          model: model,
+          messages: messages
+        })
+      });
+
+      if (!res.ok) {
+        throw new Error(`API Error: ${res.status} ${res.statusText}`);
+      }
+
+      const data = await res.json();
+      const reply = data.choices?.[0]?.message?.content || "No response received.";
+
+      loadingDiv.textContent = reply;
+      messages.push({ role: "assistant", content: reply });
+    } catch (err) {
+      loadingDiv.textContent = `Error: ${err.message}`;
+    } finally {
+      sendBtn.disabled = false;
+    }
+  });
+</script>
+
+</body>
+</html>
