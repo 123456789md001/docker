@@ -3,74 +3,87 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Simple AI Chatbot</title>
+  <title>AI Chatbot</title>
   <style>
-    body { font-family: sans-serif; background: #f4f4f9; display: flex; justify-content: center; padding: 20px; }
-    .chat-container { width: 100%; max-width: 500px; background: #fff; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); display: flex; flex-direction: column; height: 85vh; }
-    .header { padding: 12px; border-bottom: 1px solid #eee; display: flex; gap: 8px; flex-direction: column; font-size: 13px; }
-    .header input { padding: 6px; border: 1px solid #ccc; border-radius: 4px; }
-    .chat-box { flex: 1; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
-    .msg { max-width: 80%; padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.4; word-break: break-word; }
-    .user { align-self: flex-end; background: #007bff; color: #fff; }
-    .ai { align-self: flex-start; background: #e9ecef; color: #333; }
-    .input-row { display: flex; border-top: 1px solid #eee; padding: 10px; gap: 8px; }
-    .input-row input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 6px; outline: none; }
-    .input-row button { padding: 10px 18px; border: none; background: #007bff; color: #fff; border-radius: 6px; cursor: pointer; }
-    .input-row button:disabled { background: #aaa; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; padding: 15px; }
+    .chat-card { width: 100%; max-width: 480px; height: 90vh; background: #fff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); display: flex; flex-direction: column; overflow: hidden; }
+    
+    /* Config Header */
+    .config-bar { padding: 10px 14px; background: #fafafa; border-bottom: 1px solid #e5e7eb; display: flex; flex-direction: column; gap: 6px; }
+    .config-bar input { padding: 7px 10px; font-size: 12px; border: 1px solid #d1d5db; border-radius: 6px; outline: none; }
+    
+    /* Messages */
+    .messages-container { flex: 1; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+    .bubble { max-width: 80%; padding: 10px 14px; border-radius: 14px; font-size: 14px; line-height: 1.4; word-break: break-word; }
+    .user { align-self: flex-end; background: #2563eb; color: #fff; border-bottom-right-radius: 3px; }
+    .ai { align-self: flex-start; background: #e5e7eb; color: #1f2937; border-bottom-left-radius: 3px; }
+    
+    /* Input Area */
+    .input-bar { display: flex; padding: 12px; border-top: 1px solid #e5e7eb; gap: 8px; background: #fff; }
+    .input-bar input { flex: 1; padding: 10px 14px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; outline: none; }
+    .input-bar button { padding: 10px 18px; border: none; background: #2563eb; color: #fff; border-radius: 8px; font-weight: 500; cursor: pointer; }
+    .input-bar button:disabled { background: #93c5fd; cursor: not-allowed; }
   </style>
 </head>
 <body>
 
-<div class="chat-container">
-  <div class="header">
-    <input type="text" id="apiUrl" value="https://api.openai.com/v1/chat/completions" placeholder="API Endpoint URL" />
-    <input type="password" id="apiKey" placeholder="API Key (e.g. sk-...)" />
-    <input type="text" id="model" value="gpt-4o-mini" placeholder="Model Name (e.g. gpt-4o-mini, flash)" />
+<div class="chat-card">
+  <!-- API Settings -->
+  <div class="config-bar">
+    <input type="text" id="endpoint" value="https://generativelanguage.googleapis.com/v1beta/openai/chat/completions" placeholder="API Endpoint URL" />
+    <input type="password" id="apiKey" placeholder="Paste API Key (AIzaSy...)" />
+    <input type="text" id="model" value="gemini-2.5-flash" placeholder="Model (e.g. gemini-2.5-flash)" />
   </div>
 
-  <div class="chat-box" id="chatBox"></div>
+  <!-- Chat Log -->
+  <div class="messages-container" id="chat"></div>
 
-  <form class="input-row" id="chatForm">
-    <input type="text" id="userInput" placeholder="Type your message..." required autocomplete="off" />
+  <!-- Message Form -->
+  <form class="input-bar" id="chatForm">
+    <input type="text" id="prompt" placeholder="Type a message..." required autocomplete="off" />
     <button type="submit" id="sendBtn">Send</button>
   </form>
 </div>
 
 <script>
-  const chatBox = document.getElementById("chatBox");
-  const chatForm = document.getElementById("chatForm");
-  const userInput = document.getElementById("userInput");
+  const chat = document.getElementById("chat");
+  const form = document.getElementById("chatForm");
+  const prompt = document.getElementById("prompt");
   const sendBtn = document.getElementById("sendBtn");
 
-  // Maintain conversation history
-  const messages = [
-    { role: "system", content: "You are a helpful assistant." }
+  const history = [
+    { role: "system", content: "You are a concise, helpful assistant." }
   ];
 
-  function appendMessage(role, text) {
-    const div = document.createElement("div");
-    div.className = `msg ${role}`;
-    div.textContent = text;
-    chatBox.appendChild(div);
-    chatBox.scrollTop = chatBox.scrollHeight;
-    return div;
+  function addMessage(role, text) {
+    const bubble = document.createElement("div");
+    bubble.className = `bubble ${role}`;
+    bubble.textContent = text;
+    chat.appendChild(bubble);
+    chat.scrollTop = chat.scrollHeight;
+    return bubble;
   }
 
-  chatForm.addEventListener("submit", async (e) => {
+  form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    const text = userInput.value.trim();
-    if (!text) return;
-
-    const endpoint = document.getElementById("apiUrl").value.trim();
+    const query = prompt.value.trim();
     const key = document.getElementById("apiKey").value.trim();
+    const endpoint = document.getElementById("endpoint").value.trim();
     const model = document.getElementById("model").value.trim();
 
-    appendMessage("user", text);
-    messages.push({ role: "user", content: text });
-    userInput.value = "";
+    if (!query) return;
+    if (!key) {
+      alert("Please enter your API key at the top.");
+      return;
+    }
+
+    addMessage("user", query);
+    history.push({ role: "user", content: query });
+    prompt.value = "";
     sendBtn.disabled = true;
 
-    const loadingDiv = appendMessage("ai", "Thinking...");
+    const botBubble = addMessage("ai", "Thinking...");
 
     try {
       const res = await fetch(endpoint, {
@@ -81,23 +94,24 @@
         },
         body: JSON.stringify({
           model: model,
-          messages: messages
+          messages: history
         })
       });
 
       if (!res.ok) {
-        throw new Error(`API Error: ${res.status} ${res.statusText}`);
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData?.error?.message || `HTTP ${res.status}`);
       }
 
       const data = await res.json();
-      const reply = data.choices?.[0]?.message?.content || "No response received.";
-
-      loadingDiv.textContent = reply;
-      messages.push({ role: "assistant", content: reply });
+      const reply = data.choices?.[0]?.message?.content || "No reply.";
+      botBubble.textContent = reply;
+      history.push({ role: "assistant", content: reply });
     } catch (err) {
-      loadingDiv.textContent = `Error: ${err.message}`;
+      botBubble.textContent = `Error: ${err.message}`;
     } finally {
       sendBtn.disabled = false;
+      prompt.focus();
     }
   });
 </script>
